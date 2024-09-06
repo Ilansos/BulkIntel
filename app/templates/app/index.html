@@ -1,0 +1,41 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IP Reputation Checker</title>
+    <link rel="stylesheet" href="{% static 'app/styles.css' %}">
+    <link rel="icon" href="{% static 'app/icons/favicon.ico' %}" type="image/x-icon">
+</head>
+<body>
+    <div class="header">
+        <img src="{% static 'app/icons/favicon.ico' %}" alt="App Icon" class="app-icon">
+        <div class="user-info">
+            <p>Hello, {{ request.user.username }}</p>
+            <form action="{% url 'app:logout' %}" method="post">
+                {% csrf_token %}
+                <button type="submit" class="logout-button">Logout</button>
+            </form>        
+        </div>
+    </div>
+
+    <div class="input-section">
+        <textarea id="ip_input" class="ip-textarea" placeholder="Enter IPs, URLs, domains or user agents here (one per line)..."></textarea>
+        <div class="buttons-container">
+            <button id="check_abuseipdb" class="check-button">Check IP on AbuseIPDB</button>
+            <button id="check_virustotal" class="check-button">Check IP on VirusTotal</button>
+            <button id="check_url_virustotal" class="check-button">Scan URL on VirusTotal</button>
+            <button id="check_domain_virustotal" class="check-button">Check domain on on VirusTotal</button>
+            <button id="check_user_agent" class="check-button">Check user agent</button>
+        </div>
+    </div>
+
+    <div id="results_table" class="results-section">
+        <!-- Results will be displayed here by JavaScript -->
+    </div>
+
+    <script src="{% static 'app/js/index.js' %}"></script>
+   
+</body>
+</html>

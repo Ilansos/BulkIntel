@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ipchecker
+  namespace: ipchecker-pre-release
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: ipchecker
+  template:
+    metadata:
+      labels:
+        app: ipchecker
+    spec:
+      containers:
+      - name: ipchecker
+        image: localhost:32000/ipchecker:v2
+        resources:
+          requests:
+            cpu: "100m" # Minimum CPU resources required
+          limits:
+            cpu: "500m" # Maximum CPU resources allowed
+        command: ["/bin/sh","-c"]
+        args: ["doppler run -- python manage.py migrate && doppler run -- gunicorn --workers 3 --bind 0.0.0.0:9005 ip_checker.wsgi:application"]
+        volumeMounts:
+        - name: sqlite-storage
+          mountPath: /data
+        env:
+        - name: DOPPLER_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: doppler-token
+              key: DOPPLER_TOKEN
+        ports:
+        - containerPort: 9005
+      volumes:
+      - name: sqlite-storage
+        hostPath:
+          path: /home/crazylady/ip_checker_k8s/data
+          # type: DirectoryOrCreate
+

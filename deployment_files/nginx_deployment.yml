@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx
+  namespace: ipchecker-pre-release
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:latest
+        resources:
+          requests:
+            cpu: "50m" # Minimum CPU resources required
+          limits:
+            cpu: "200m" # Maximum CPU resources allowed
+        ports:
+        - containerPort: 443
+        volumeMounts:
+        - name: certs
+          mountPath: /etc/nginx/certs
+        - name: nginx-conf
+          mountPath: /etc/nginx/nginx.conf
+          subPath: nginx.conf  # Ensure this matches the key in the ConfigMap
+        - name: staticfiles
+          mountPath: /code/staticfiles
+      volumes:
+      - name: certs
+        secret:
+          secretName: nginx-certs
+      - name: nginx-conf
+        configMap:
+          name: nginx-config
+      - name: staticfiles
+        hostPath:
+          path: /home/crazylady/ip_checker_k8s/staticfiles

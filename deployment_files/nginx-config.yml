@@ -1,0 +1,52 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+    name: nginx-config
+    namespace: ipchecker-pre-release
+data:
+    nginx.conf: |
+        worker_processes 1;
+
+        events {
+            worker_connections 1024;
+        }
+
+        http {
+            upstream django {
+                server ipchecker:9005;
+            }
+
+            server {
+                listen 80;
+                server_name 10.0.0.40;
+                
+                location / {
+                    return 301 https://$host$request_uri;
+                }
+            }
+
+            server {
+                listen 443 ssl;
+                server_name 10.0.0.40;
+
+                ssl_certificate /etc/nginx/certs/nginx-selfsigned.crt;
+                ssl_certificate_key /etc/nginx/certs/nginx-selfsigned.key;
+
+                location /static/ {
+                    alias /code/staticfiles/;
+                    types {
+                        text/css css;
+                        application/javascript js;
+                        # other types if necessary
+                    }
+                }
+
+                location / {
+                    proxy_pass http://ipchecker:9005;
+                    proxy_set_header Host $host;
+                    proxy_set_header X-Real-IP $remote_addr;
+                    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                    proxy_set_header X-Forwarded-Proto $scheme;
+                }
+            }
+        }

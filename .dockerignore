@@ -1,0 +1,8 @@
+*.yaml
+*.yml
+nginx.config
+nginx-selfsigned.crt
+nginx-selfsigned.key
+dockerfile
+.venv/
+data/

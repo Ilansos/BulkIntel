@@ -1,0 +1,8 @@
+Django
+gunicorn
+python-decouple
+django-sslserver
+django-extensions
+django-axes
+requests
+django-redis

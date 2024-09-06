@@ -1,0 +1,13 @@
+apiVersion: autoscaling/v1
+kind: HorizontalPodAutoscaler
+metadata:
+  name: ipchecker-hpa
+  namespace: ipchecker-pre-release
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: ipchecker
+  minReplicas: 1
+  maxReplicas: 3
+  targetCPUUtilizationPercentage: 50

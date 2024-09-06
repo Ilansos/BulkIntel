@@ -1,0 +1,55 @@
+{% extends 'auth_app/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="login-container">
+    <div class="centered-content">
+        <img src="{% static 'app/icons/favicon.ico' %}" alt="IP Checker Icon">
+        <h2>Register</h2>
+    </div>
+    <p>Sign up to continue to IP Checker.</p>
+    <form method="post" id="registrationForm">
+        {% csrf_token %}
+        <label for="username">Username *</label>
+        {{ form.username }}
+        {% if form.username.errors %}
+            <div class="error">{{ form.username.errors }}</div>
+        {% endif %}
+        <label for="email">Email address *</label>
+        {{ form.email }}
+        {% if form.email.errors %}
+            <div class="error">{{ form.email.errors }}</div>
+        {% endif %}
+        <div class="password-container">
+            <label for="password">Password *</label>
+            {{ form.password1 }}
+            {% if form.password1.errors %}
+                <div class="error">{{ form.password1.errors }}</div>
+            {% endif %}
+            <ul id="passwordCriteria" class="criteria-list">
+                <li id="minChars">At least 10 characters</li>
+                <li id="upperCase">At least one uppercase letter</li>
+                <li id="lowerCase">At least one lowercase letter</li>
+                <li id="digit">At least one digit</li>
+                <li id="symbol">At least one symbol (!@#$%^&*)</li>
+            </ul>
+        </div>
+
+        <div class="password-container">
+            <label for="password2">Repeat password *</label>
+            {{ form.password2 }}
+            {% if form.password2.errors %}
+                <div class="error">{{ form.password2.errors }}</div>
+            {% endif %}
+            <ul id="passwordMatch" class="criteria-list">
+                <li id="password_match">Passwords match</li>
+            </ul>
+        </div>
+
+        <button type="submit">Register</button>
+    </form>
+    <a href="/login/" class="btn">Login</a>
+</div>
+<script src="{% static 'app/js/register_form.js' %}"></script>
+
+{% endblock %}

@@ -1,0 +1,110 @@
+body {
+    font-family: Arial, sans-serif;
+    background-color: #000000;
+    margin: 0;
+    padding: 20px;
+}
+
+.login-container {
+    width: 300px;
+    padding: 40px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    background: white;
+    margin: auto;
+    margin-top: 90px;
+}
+
+label {
+    display: block;
+    margin-bottom: 5px;
+    /* margin-right: 5px; */
+}
+
+input[type="text"], input[type="password"], input[type="email"] {
+    width: 100%;
+    padding: 10px; /* Adjust padding to center text vertically */
+    margin-bottom: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    height: 40px; /* Setting a fixed height */
+    line-height: 40px; /* Ensuring line height matches the height for vertical alignment */
+    box-sizing: border-box; /* Ensures padding doesn't affect the width */
+}
+
+.btn {
+    /* display: block;
+    width: 100%;
+    padding: 8px;
+    background-color: #007bff;
+    color: white;
+    text-align: center;
+    border-radius: 5px;
+    text-decoration: none;
+    margin-top: 10px; */
+    background-color: #022538;
+    border: none;
+    color: white;
+    padding: 12px 24px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 16px;
+    margin: 4px 2px;
+    cursor: pointer;
+    border-radius: 8px;
+    transition: background-color 0.3s, box-shadow 0.3s;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+.btn:hover {
+    /* background-color: #0056b3; */
+    background-color: #0056b3;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+    transform: scale(1.05);
+}
+
+button {
+    background-color: #022538;
+    border: none;
+    color: white;
+    padding: 12px 120px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 16px;
+    margin: 4px 2px;
+    cursor: pointer;
+    border-radius: 8px;
+    transition: background-color 0.3s, box-shadow 0.3s;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+button:hover {
+    background-color: #0056b3;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+    transform: scale(1.05);
+}
+
+.centered-content {
+    text-align: center;
+    margin-bottom: 20px; /* Adjust spacing as needed */
+}
+
+.centered-content img {
+    height: 160px; /* Adjust based on your favicon's preferred display size */
+    width: auto;
+}
+
+h2 {
+    margin: 10px 0 0; /* Reduces space above the h2 if needed */
+}
+
+.criteria-list li, .criteria-list div {
+    color: red; /* Default color */
+}
+
+.criteria-list li.pass, .criteria-list div.pass {
+    color: green; /* Changes to green when criteria are met */
+}
