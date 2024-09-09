@@ -1,13 +1,13 @@
 apiVersion: autoscaling/v1
 kind: HorizontalPodAutoscaler
 metadata:
-  name: ipchecker-hpa
-  namespace: ipchecker-pre-release
+  name: bulkintel-hpa
+  namespace: bulkintel
 spec:
   scaleTargetRef:
     apiVersion: apps/v1
     kind: Deployment
-    name: ipchecker
+    name: bulkintel
   minReplicas: 1
   maxReplicas: 3
   targetCPUUtilizationPercentage: 50

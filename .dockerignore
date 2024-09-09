@@ -6,3 +6,5 @@ nginx-selfsigned.key
 dockerfile
 .venv/
 data/
+*.sh
+readme.md

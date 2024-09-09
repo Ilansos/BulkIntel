@@ -1,42 +1,55 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: ipchecker
-  namespace: ipchecker-pre-release
+  name: bulkintel
+  namespace: bulkintel
 spec:
   replicas: 3
   selector:
     matchLabels:
-      app: ipchecker
+      app: bulkintel
   template:
     metadata:
       labels:
-        app: ipchecker
+        app: bulkintel
     spec:
       containers:
-      - name: ipchecker
-        image: localhost:32000/ipchecker:v2
+      - name: bulkintel
+        image: localhost:32000/bulkintel:v1
         resources:
           requests:
             cpu: "100m" # Minimum CPU resources required
           limits:
             cpu: "500m" # Maximum CPU resources allowed
         command: ["/bin/sh","-c"]
-        args: ["doppler run -- python manage.py migrate && doppler run -- gunicorn --workers 3 --bind 0.0.0.0:9005 ip_checker.wsgi:application"]
+        args: ["python manage.py migrate && gunicorn --workers 3 --bind 0.0.0.0:9005 bulkintel.wsgi:application"]
         volumeMounts:
         - name: sqlite-storage
           mountPath: /data
         env:
-        - name: DOPPLER_TOKEN
+        - name: SECRET_KEY
           valueFrom:
             secretKeyRef:
-              name: doppler-token
-              key: DOPPLER_TOKEN
+              name: bulkintelsecrets
+              key: SECRET_KEY
+        - name: ABUSEIPDB_KEY
+          valueFrom:
+            secretKeyRef:
+              name: bulkintelsecrets
+              key: ABUSEIPDB_KEY
+        - name: VIRUSTOTAL_KEY
+          valueFrom:
+            secretKeyRef:
+              name: bulkintelsecrets
+              key: VIRUSTOTAL_KEY
+        - name: BIG_DATA_USERAGENT_KEY
+          valueFrom:
+            secretKeyRef:
+              name: bulkintelsecrets
+              key: BIG_DATA_USERAGENT_KEY
         ports:
         - containerPort: 9005
       volumes:
       - name: sqlite-storage
         hostPath:
-          path: /home/crazylady/ip_checker_k8s/data
-          # type: DirectoryOrCreate
-
+          path: /data

@@ -1,3 +1,2 @@
 .venv/
-secrets.yml
 nginx-cert-secret.yaml

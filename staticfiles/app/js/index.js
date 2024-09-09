@@ -10,6 +10,9 @@ document.getElementById('check_url_virustotal').addEventListener('click', functi
 document.getElementById('check_domain_virustotal').addEventListener('click', function() {
     checkIP('/check_domain_virustotal/');
 });
+document.getElementById('check_hash_virustotal').addEventListener('click', function() {
+    checkIP('/check_hash_virustotal/');
+});
 document.getElementById('check_user_agent').addEventListener('click', function() {
     checkIP('/check_user_agent/');
 });

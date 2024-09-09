@@ -1,7 +1,7 @@
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
 from django.views.decorators.csrf import csrf_protect
-from .utils import extract_ips, abuse_ipdb_logic, virustotal_logic, ibm_xforce_logic, get_domain_report, extract_domains, get_user_agent_info, scan_url_virustotal
+from .utils import extract_ips, abuse_ipdb_logic, virustotal_logic, get_domain_report, extract_domains, get_user_agent_info, scan_url_virustotal, scan_hashes_logic
 from django.shortcuts import render
 
 def home(request):
@@ -23,15 +23,6 @@ def check_ip_virustotal(request):
         ip_data = request.POST.get('ip_data', '')
         ips = extract_ips(ip_data)
         results = virustotal_logic(ips)
-        return JsonResponse({'results': results}, safe=False)  # Return data as JSON
-
-@require_http_methods(["POST"])
-@csrf_protect
-def check_ip_ibm(request):
-    if request.method == "POST":
-        ip_data = request.POST.get('ip_data', '')
-        ips = extract_ips(ip_data)
-        results = ibm_xforce_logic(ips)
         return JsonResponse({'results': results}, safe=False)  # Return data as JSON
 
 @require_http_methods(["POST"])
@@ -59,4 +50,12 @@ def check_url_virustotal(request):
         urls_data_data = request.POST.get('ip_data', '')
         urls_to_scan = extract_domains(urls_data_data)
         results = scan_url_virustotal(urls_to_scan)
+        return JsonResponse({'results': results}, safe=False)  # Return data as JSON
+    
+@require_http_methods(["POST"])
+@csrf_protect
+def check_hash_virustotal(request):
+    if request.method == "POST":
+        hash_data = request.POST.get('ip_data', '')
+        results = scan_hashes_logic(hash_data)
         return JsonResponse({'results': results}, safe=False)  # Return data as JSON

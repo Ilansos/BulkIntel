@@ -3,6 +3,11 @@
 # Prompt the user for the IP address
 read -p "Please enter your IP address: " IP
 
+# Prompt the user for the API key
+read -p "Please enter your AbuseIPDB API key: " abuse_ipdb_api_key
+read -p "Please enter your VirusTotal API key: " virus_total_api_key
+read -p "Please enter your Big Data Cloud API key: " big_data_api_key
+
 # Get the current working directory
 current_dir=$(pwd)
 
@@ -17,6 +22,23 @@ create_namespace() {
   fi
 }
 
+check_and_enable_microk8s_services() {
+    services=("dns" "registry")
+    for service in "${services[@]}"; do
+        if microk8s status --format short | grep -q "${service}: enabled"; then
+            echo "${service} is already enabled."
+        else
+            echo "${service} is not enabled. Enabling ${service}..."
+            microk8s enable "${service}"
+            if [ $? -eq 0 ]; then
+                echo "${service} enabled successfully."
+            else
+                echo "Failed to enable ${service}."
+            fi
+        fi
+    done
+}
+
 # Check if metrics-server is enabled
 if ! microk8s status | grep -q "metrics-server: enabled"; then
   echo "Enabling metrics-server..."
@@ -25,13 +47,37 @@ else
   echo "metrics-server is already enabled."
 fi
 
-# YAML template (use a heredoc for the file content)
+check_and_enable_microk8s_services
+
+# Convert the API key to base64
+abuse_ipdb_key=$(echo -n "$abuse_ipdb_api_key" | base64 -w 0)
+virus_total_key=$(echo -n "$virus_total_api_key" | base64 -w 0)
+big_data_key=$(echo -n "$big_data_api_key" | base64 -w 0)
+
+# YML template (use a heredoc for the file content)
+cat <<EOF > deployment_files/secrets.yml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: bulkintelsecrets
+  namespace: bulkintel
+type: Opaque
+data:
+  SECRET_KEY: "ZGphbmdvLWluc2VjdXJlLXgwcWdodTApendqej05eF8tXmhsN3VwcyQ3emdAQHlrNylpdXcrJjJrZiF6dm5qejNe"
+  ABUSEIPDB_KEY: $abuse_ipdb_key
+  VIRUSTOTAL_KEY: $virus_total_key
+  BIG_DATA_USERAGENT_KEY: $big_data_key
+EOF
+
+echo "secrets.yml has been created with the base64-encoded AbuseIPDB API key."
+
+# YML template (use a heredoc for the file content)
 cat <<EOF > deployment_files/nginx-config.yml
 apiVersion: v1
 kind: ConfigMap
 metadata:
     name: nginx-config
-    namespace: ipchecker-pre-release
+    namespace: bulkintel
 data:
     nginx.conf: |
         worker_processes 1;
@@ -42,7 +88,7 @@ data:
 
         http {
             upstream django {
-                server ipchecker:9005;
+                server bulkintel:9005;
             }
 
             server {
@@ -71,7 +117,7 @@ data:
                 }
 
                 location / {
-                    proxy_pass http://ipchecker:9005;
+                    proxy_pass http://bulkintel:9005;
                     proxy_set_header Host \$host;
                     proxy_set_header X-Real-IP \$remote_addr;
                     proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
@@ -81,26 +127,26 @@ data:
         }
 EOF
 
-echo "nginx-config.yaml has been created with the provided IP address."
+echo "nginx-config.yml has been created with the provided IP address."
 
 
 # File path to settings.py (adjust if needed)
-SETTINGS_FILE="ip_checker/settings.py"
+SETTINGS_FILE="bulkintel/settings.py"
 
 # Replace ALLOWED_HOSTS and CSRF_TRUSTED_ORIGINS in the settings.py file
 sed -i "/^ALLOWED_HOSTS/c\ALLOWED_HOSTS = ['localhost', '127.0.0.1', '$IP']" "$SETTINGS_FILE"
 
-sed -i "/^CSRF_TRUSTED_ORIGINS/c\CSRF_TRUSTED_ORIGINS = ['https://localhost', 'https://$IP', 'https://127.0.0.1', 'https://localhost:32444', 'https://$IP:32444', 'https://127.0.0.1:32444']" "$SETTINGS_FILE"
+sed -i "/^CSRF_TRUSTED_ORIGINS/c\CSRF_TRUSTED_ORIGINS = ['https://localhost', 'https://$IP', 'https://127.0.0.1', 'https://localhost:32555', 'https://$IP:32555', 'https://127.0.0.1:32555']" "$SETTINGS_FILE"
 
 echo "IP address has been added to ALLOWED_HOSTS and CSRF_TRUSTED_ORIGINS in $SETTINGS_FILE"
 
 # Replacing the working directory for the mount in Nginx deployment
-cat <<EOF > nginx-deployment.yaml
+cat <<EOF > deployment_files/nginx_deployment.yml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: nginx
-  namespace: ipchecker-pre-release
+  namespace: bulkintel
 spec:
   replicas: 3
   selector:
@@ -141,44 +187,59 @@ spec:
           path: $current_dir/staticfiles
 EOF
 
-echo "nginx-deployment.yaml has been created with the current working directory."
+echo "nginx_deployment.yml has been created with the current working directory."
 
 # Replacing the working directory for the mount in IP checker deployment
-cat <<EOF > ipchecker-deployment.yaml
+cat <<EOF > deployment_files/deployment.yml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: ipchecker
-  namespace: ipchecker-pre-release
+  name: bulkintel
+  namespace: bulkintel
 spec:
   replicas: 3
   selector:
     matchLabels:
-      app: ipchecker
+      app: bulkintel
   template:
     metadata:
       labels:
-        app: ipchecker
+        app: bulkintel
     spec:
       containers:
-      - name: ipchecker
-        image: localhost:32000/ipchecker:v2
+      - name: bulkintel
+        image: localhost:32000/bulkintel:v1
         resources:
           requests:
             cpu: "100m" # Minimum CPU resources required
           limits:
             cpu: "500m" # Maximum CPU resources allowed
         command: ["/bin/sh","-c"]
-        args: ["doppler run -- python manage.py migrate && doppler run -- gunicorn --workers 3 --bind 0.0.0.0:9005 ip_checker.wsgi:application"]
+        args: ["python manage.py migrate && gunicorn --workers 3 --bind 0.0.0.0:9005 bulkintel.wsgi:application"]
         volumeMounts:
         - name: sqlite-storage
           mountPath: /data
         env:
-        - name: DOPPLER_TOKEN
+        - name: SECRET_KEY
           valueFrom:
             secretKeyRef:
-              name: doppler-token
-              key: DOPPLER_TOKEN
+              name: bulkintelsecrets
+              key: SECRET_KEY
+        - name: ABUSEIPDB_KEY
+          valueFrom:
+            secretKeyRef:
+              name: bulkintelsecrets
+              key: ABUSEIPDB_KEY
+        - name: VIRUSTOTAL_KEY
+          valueFrom:
+            secretKeyRef:
+              name: bulkintelsecrets
+              key: VIRUSTOTAL_KEY
+        - name: BIG_DATA_USERAGENT_KEY
+          valueFrom:
+            secretKeyRef:
+              name: bulkintelsecrets
+              key: BIG_DATA_USERAGENT_KEY
         ports:
         - containerPort: 9005
       volumes:
@@ -187,7 +248,7 @@ spec:
           path: $current_dir/data
 EOF
 
-echo "ipchecker-deployment.yaml has been created with the current working directory."
+echo "deployment.yml has been created with the current working directory."
 
 # Check if SSL certificates exist
 if [[ ! -f "nginx-selfsigned.key" || ! -f "nginx-selfsigned.crt" ]]; then
@@ -198,10 +259,15 @@ else
   echo "SSL certificates already exist."
 fi
 
-# Create the ipchecker namespace if it doesn't exist
-create_namespace "ipchecker-pre-release"
+# Build and push the docker image to the local repository
+docker build -t localhost:32000/bulkintel:v1 . # Change the image name before releae
 
-# Apply the YAML files and configurations
+docker push localhost:32000/bulkintel:v1 # Change the image name before releae
+
+# Create the bulkintel namespace if it doesn't exist
+create_namespace "bulkintel"
+
+# Apply the YML files and configurations
 echo "Applying Kubernetes configurations..."
 
 microk8s kubectl apply -f deployment_files/secrets.yml
@@ -210,13 +276,13 @@ sleep 2
 microk8s kubectl apply -f deployment_files/deployment.yml
 sleep 5
 
-microk8s kubectl apply -f deployment_files/ipchecker_service.yml
+microk8s kubectl apply -f deployment_files/bulkintel_service.yml
 sleep 2
 
-microk8s kubectl apply -f deployment_files/ipchecker_hpa.yml
+microk8s kubectl apply -f deployment_files/bulkintel_hpa.yml
 sleep 2
 
-microk8s kubectl create secret generic nginx-certs --from-file=nginx-selfsigned.crt --from-file=nginx-selfsigned.key --namespace=ipchecker-pre-release
+microk8s kubectl create secret generic nginx-certs --from-file=nginx-selfsigned.crt --from-file=nginx-selfsigned.key --namespace=bulkintel
 sleep 2
 
 microk8s kubectl apply -f deployment_files/nginx-config.yml

@@ -12,32 +12,15 @@ logging.basicConfig(stream=sys.stdout,
                     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-# Replace these with your actual API keys and secure them appropriately
-ABUSEIPDB_KEYS = [
-    os.environ['ABUSEIPDB_KEY'],
-    os.environ['ABUSEIPDB_KEY1'],
-    os.environ['ABUSEIPDB_KEY2']
-]
 
-# Counter to keep track of the request number
-request_counter = 0
-
+ABUSEIPDB_KEY = os.environ['ABUSEIPDB_KEY']
 VIRUSTOTAL_KEY = os.environ['VIRUSTOTAL_KEY']
-IBM_XFORCE_KEY = os.environ['IBM_XFORCE_KEY']
-IBM_XFORCE_PASSWORD = os.environ['IBM_XFORCE_PASSWORD']
 BIG_DATA_USERAGENT_KEY = os.environ['BIG_DATA_USERAGENT_KEY']
 
 categories_data = {}
 country_codes_dict = {}
 
-def get_api_key():
-    global request_counter
-    api_key = ABUSEIPDB_KEYS[request_counter % len(ABUSEIPDB_KEYS)]
-    request_counter += 1
-    return api_key
-
 def load_global_data():
-    # Assuming you have categories.json and country_codes.json in your Django settings directory or a similar secure place
     
     global categories_data, country_codes_dict
     try:
@@ -66,7 +49,7 @@ def check_ip_on_abuse_ipdb(abuse_ipdb_key, country_codes_dict, ip):
             'ipAddress': ip,
             'maxAgeInDays': '30',
         }
-        # logging.info(f"Requesting AbuseIPDB check for IP: {ip}")
+
         response = requests.get(url, headers=headers, params=params)
 
         if response.status_code == 200:
@@ -116,32 +99,8 @@ def check_reports_on_abuse_ipdb(abuse_ipdb_key, ip):
         logger.error(f"Failed to fetch data for IP {ip}. Status code: {response.status_code}")
     return translated_category, reportedAt
 
-# def abuse_ipdb_logic(ips_to_check):
-#     abuse_ipdb_key = get_api_key()
-#     global categories_data, country_codes_dict
-#     ip_info = []
-#     for ip in ips_to_check:
-#         try:
-#             country, isp, total_reports, abuseConfidenceScore, isWhitelisted = check_ip_on_abuse_ipdb(abuse_ipdb_key, country_codes_dict, ip)
-            
-#             output_line = f"{ip} ({country}, {isp}) "
-            
-#             if total_reports >= 1:
-#                 translated_category, reportedAt = check_reports_on_abuse_ipdb(abuse_ipdb_key, ip)
-#                 output_line += f"Reported for {translated_category} at {reportedAt}"
-#             else:
-#                 output_line += "No reports"
-
-#             output_line += f" | Abuse Confidence Score: {abuseConfidenceScore} | Is Whitelisted: {isWhitelisted}"
-
-#             ip_info.append(output_line)
-
-#         except:
-#             ip_info.append(f"Error requesting the IP {ip}")
-#     return ip_info
-
 def abuse_ipdb_logic(ips_to_check):
-    abuse_ipdb_key = get_api_key()
+    abuse_ipdb_key = ABUSEIPDB_KEY
     global categories_data, country_codes_dict
     ip_info = []
 
@@ -213,67 +172,6 @@ def virustotal_logic(ips_to_check):
             ip_info.append(output_line)
         except:
             ip_info.append(f"Error requesting the IP {ip}")
-    return ip_info
-
-def auth_token_ibm():
-    ibm_xforce_key = IBM_XFORCE_KEY
-    ibm_xforce_password = IBM_XFORCE_PASSWORD
-
-    # Encode the API key and password using base64
-    credentials = base64.b64encode(f'{ibm_xforce_key}:{ibm_xforce_password}'.encode('utf-8')).decode('utf-8')
-    return credentials
-
-def get_ip_risk_ibm(ip, token):
-    url = f'https://api.xforce.ibmcloud.com/api/ipr/{ip}'
-    # Set up the headers with encoded credentials
-    headers = {
-        'Authorization': f'Basic {token}',
-        'Content-Type': 'application/json',
-    }
-
-    # Make the request
-    response = requests.get(url, headers=headers)
-    logger.info(f"Requesting IBM Risk check for IP: {ip}")
-    # Check the response
-    if response.status_code == 200:
-        data = response.json()
-        score = data.get('score')
-    else:
-        logger.error(f"Failed to fetch reports for IP {ip}. Status code: {response.status_code}")
-
-    return ip, score
-
-def get_ip_whois_ibm(ip, token):
-    url = f"https://api.xforce.ibmcloud.com/api/whois/{ip}"
-    # Set up the headers with encoded credentials
-    headers = {
-        'Authorization': f'Basic {token}',
-        'Content-Type': 'application/json',
-    }
-
-    # Make the request
-    response = requests.get(url, headers=headers)
-    logger.info(f"Requesting whois IBM X-Force check for IP {ip}")
-    # Check the response
-    if response.status_code == 200:
-        data = response.json()
-        contact = data.get('contact')
-        organization = contact[0].get('organization')
-        country = contact[0].get('country')
-    else:
-        logger.error(f"Failed to fetch reports for IP {ip}. Status code: {response.status_code}")
-
-    return organization, country
-
-def ibm_xforce_logic(ips_to_check):
-    logger.info("Starting ibm_xforce_logic")
-    token = auth_token_ibm()
-    ip_info = []
-    for ip_address in ips_to_check:
-        ip, score = get_ip_risk_ibm(ip_address, token)
-        isp, country = get_ip_whois_ibm(ip_address, token)
-        output_line = f"{ip}, ({country}, {isp}) Risk Score of {score} in IBM X-Force"
-        ip_info.append(output_line)
     return ip_info
 
 def extract_domains(data):
@@ -398,10 +296,79 @@ def get_url_analisis(url_to_scan, scan_id):
         if malicious == 0 and suspicious == 0:
             report = f"URL {url_to_scan}: On VirusTotal no security vendors flagged this URL as malicious"
         elif malicious == 0 and suspicious >= 1:
-            report = f"URL {url_to_scan}: On VirusTotal {suspicious}/{total_count} security vendors flagged URL domain as suspicious"
+            report = f"URL {url_to_scan}: On VirusTotal {suspicious}/{total_count} security vendors flagged this URL as suspicious"
         else:
-            report = f"URL {url_to_scan}: On VirusTotal {malicious}/{total_count} security vendors flagged URL domain as malicious"
+            report = f"URL {url_to_scan}: On VirusTotal {malicious}/{total_count} security vendors flagged this URL as malicious"
     except:
         report = f"Error requesting the URL {url_to_scan}"
 
     return report
+
+def get_hash_reports(hash):
+    url = f"https://www.virustotal.com/api/v3/files/{hash}"
+
+    headers = {
+        "accept": "application/json",
+        "x-apikey": VIRUSTOTAL_KEY
+    }
+    try:
+        response = requests.get(url, headers=headers)
+        response_json = response.json()
+        data = response_json.get("data")
+        attributes = data.get("attributes")
+        signature_info = attributes.get("signature_info")
+        try:
+            original_name = signature_info.get("original name")
+        except:
+            original_name = "Not found"
+        last_analysis_stats = attributes.get("last_analysis_stats")
+        malicious = last_analysis_stats.get("malicious")
+        suspicious = last_analysis_stats.get("suspicious")
+        undetected = last_analysis_stats.get("undetected")
+        total_count = malicious + suspicious + undetected
+
+        if malicious == 0 and suspicious == 0:
+            report = f"Original name: {original_name}: On VirusTotal no security vendors flagged this HASH as malicious"
+        elif malicious == 0 and suspicious >= 1:
+            report = f"Original name: {original_name}: On VirusTotal {suspicious}/{total_count} security vendors flagged this HASH as suspicious"
+        else:
+            report = f"Original name: {original_name}: On VirusTotal {malicious}/{total_count} security vendors flagged this HASH as malicious"
+    except:
+        report = f"Error requesting the HASH {hash}"
+
+    return report
+
+
+def extract_hashes(data):
+    # Define the regex patterns for MD5, SHA-1, and SHA-256 hashes
+    md5_pattern = re.compile(r'^[a-fA-F0-9]{32}$')
+    sha1_pattern = re.compile(r'^[a-fA-F0-9]{40}$')
+    sha256_pattern = re.compile(r'^[a-fA-F0-9]{64}$')
+
+    # Split the input by lines and strip any surrounding whitespace
+    hashes = [line.strip() for line in data.splitlines() if line.strip()]
+
+    # Validate each hash
+    valid_hashes = []
+    for h in hashes:
+        if md5_pattern.match(h):
+            valid_hashes.append(h)
+        elif sha1_pattern.match(h):
+            valid_hashes.append(h)
+        elif sha256_pattern.match(h):
+            valid_hashes.append(h)
+        else:
+            valid_hashes.append(f"Hash: {h} not valid")
+
+    return valid_hashes
+
+def scan_hashes_logic(data):
+    valid_hashes = extract_hashes(data)
+    reports = []
+    for hash in valid_hashes:
+        if "not valid" in hash:
+            reports.append(hash)
+        else:
+            report = get_hash_reports(hash)
+            reports.append(report)
+    return reports

@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: nginx
-  namespace: ipchecker-pre-release
+  namespace: bulkintel
 spec:
   replicas: 3
   selector:
@@ -40,4 +40,4 @@ spec:
           name: nginx-config
       - name: staticfiles
         hostPath:
-          path: /home/crazylady/ip_checker_k8s/staticfiles
+          path: /staticfiles

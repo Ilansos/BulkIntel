@@ -2,7 +2,7 @@ apiVersion: autoscaling/v1
 kind: HorizontalPodAutoscaler
 metadata:
   name: nginx-hpa # Name of the autoscaling resource
-  namespace: ipchecker-pre-release
+  namespace: bulkintel
 spec:
   scaleTargetRef:
     apiVersion: apps/v1
