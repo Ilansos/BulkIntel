@@ -43,7 +43,7 @@ sudo snap install microk8s --classic
     Clone the BulkIntel repository to your server:
 
 ```bash
-git clone <repository-url>
+git clone https://github.com/Ilansos/BulkIntel.git
 ```
 
 4. Enter the Project Directory
@@ -51,7 +51,7 @@ git clone <repository-url>
     Navigate into the cloned repository’s directory:
 
 ```bash
-cd bulkintel
+cd BulkIntel
 ```
 
 5. Make the Deployment Script Executable
