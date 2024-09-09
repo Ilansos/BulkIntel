@@ -15,5 +15,3 @@ COPY . /code/
 RUN pip install --upgrade pip \
     && pip install --no-cache-dir -r requirements.txt 
 
-# Run Gunicorn
-# CMD ["gunicorn", "--bind", "0.0.0.0:9005", "ip_checker.wsgi:application"]
